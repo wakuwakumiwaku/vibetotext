@@ -54,3 +54,17 @@ start-all.sh
 ```bash
 stop-all.sh
 ```
+
+## Testing Greppy code attachments
+
+Greppy mode attaches the contents of readable search-result files, up to 200
+lines per file by default. A truncation notice is included only when additional
+lines exist; missing or unreadable files are skipped. Reads stop after the
+requested lines plus one lookahead rather than loading the whole file.
+
+Run the headless attachment regression suite without a microphone, transcription
+model, Greppy installation, or clipboard access:
+
+```sh
+python -B -m unittest discover -s tests -v
+```

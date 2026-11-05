@@ -2,6 +2,8 @@
 
 import json
 import subprocess
+from itertools import islice
+from pathlib import Path
 from typing import List, Tuple
 
 
@@ -73,16 +75,20 @@ def read_file_content(filepath: str, max_lines: int = 500) -> str:
     Returns:
         File content as string
     """
+    if max_lines <= 0:
+        return ""
+
     try:
         path = Path(filepath)
         if not path.exists():
             return ""
 
         with open(path, 'r', encoding='utf-8', errors='ignore') as f:
-            lines = f.readlines()[:max_lines]
+            # One lookahead distinguishes an exact-length file from truncation.
+            lines = list(islice(f, max_lines + 1))
 
-        content = ''.join(lines)
-        if len(lines) == max_lines:
+        content = ''.join(lines[:max_lines])
+        if len(lines) > max_lines:
             content += f"\n... (truncated at {max_lines} lines)"
 
         return content
