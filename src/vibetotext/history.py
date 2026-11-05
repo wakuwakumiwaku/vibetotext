@@ -74,23 +74,25 @@ class TranscriptionHistory:
         if not json_path.exists():
             return
 
-        # Check if we already have entries (don't migrate twice)
-        with self._get_connection() as conn:
-            count = conn.execute("SELECT COUNT(*) FROM entries").fetchone()[0]
-            if count > 0:
-                return
-
         try:
-            with open(json_path, "r") as f:
-                data = json.load(f)
-
-            entries = data.get("entries", [])
-            if not entries:
-                return
-
-            print(f"[HISTORY] Migrating {len(entries)} entries from JSON to SQLite...")
-
             with self._get_connection() as conn:
+                # Reserve the write transaction before checking for an empty
+                # database. Multiple app instances must not import the same
+                # legacy JSON after both observing zero entries.
+                conn.execute("BEGIN IMMEDIATE")
+                count = conn.execute("SELECT COUNT(*) FROM entries").fetchone()[0]
+                if count > 0:
+                    return
+
+                with open(json_path, "r") as f:
+                    data = json.load(f)
+
+                entries = data.get("entries", [])
+                if not entries:
+                    return
+
+                print(f"[HISTORY] Migrating {len(entries)} entries from JSON to SQLite...")
+
                 for entry in entries:
                     conn.execute("""
                         INSERT INTO entries (text, mode, timestamp, word_count, duration_seconds, wpm)
