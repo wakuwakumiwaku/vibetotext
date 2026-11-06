@@ -2,6 +2,7 @@
 
 import subprocess
 import json
+import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -12,10 +13,10 @@ def get_project_root() -> Optional[Path]:
         result = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
             capture_output=True,
-            text=True,
         )
         if result.returncode == 0:
-            return Path(result.stdout.strip())
+            # Remove Git's record terminator, not whitespace in the filename.
+            return Path(os.fsdecode(result.stdout.removesuffix(b"\n")))
     except Exception:
         pass
     return Path.cwd()
