@@ -30,6 +30,8 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+from contextlib import closing
+import sqlite3
 
 # PyObjC imports
 from AppKit import (
@@ -45,7 +47,7 @@ from Foundation import NSForegroundColorAttributeName, NSFontAttributeName
 import objc
 
 IPC_FILE = sys.argv[1]
-HISTORY_FILE = Path.home() / ".vibetotext" / "history.json"
+HISTORY_FILE = Path.home() / ".vibetotext" / "history.db"
 CONFIG_FILE = Path.home() / ".vibetotext" / "config.json"
 
 
@@ -107,11 +109,13 @@ STOPWORDS = {
 
 
 def load_history():
-    """Load history from disk."""
+    """Read the same SQLite history database as the transcription engine."""
     try:
         if HISTORY_FILE.exists():
-            with open(HISTORY_FILE, "r") as f:
-                return json.load(f)
+            with closing(sqlite3.connect(str(HISTORY_FILE), timeout=5.0)) as conn:
+                conn.row_factory = sqlite3.Row
+                rows = conn.execute("SELECT * FROM entries ORDER BY timestamp DESC").fetchall()
+                return {"entries": [dict(row) for row in rows]}
     except Exception:
         pass
     return {"entries": []}
